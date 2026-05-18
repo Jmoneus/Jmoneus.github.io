@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>3x10 Grid Logger</title>
+    <title>Vehicle Grid Logger</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -17,15 +17,33 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: var(--bg-color); color: var(--text); padding: 10px; padding-bottom: 60px; }
         
-        h2 { text-align: center; margin: 10px 0 20px 0; font-weight: 400; font-size: 1.2rem; letter-spacing: 1px; }
+        h2 { text-align: center; margin: 10px 0 15px 0; font-weight: 400; font-size: 1.2rem; letter-spacing: 1px; }
+
+        /* Grid Wrapper for Max Width Constraint */
+        .matrix-wrapper {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* Column Headers */
+        .grid-headers {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            text-align: center;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: var(--accent);
+            letter-spacing: 0.5px;
+        }
 
         /* 3x10 Grid Setup */
         .grid-container {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 8px;
-            max-width: 500px;
-            margin: 0 auto;
         }
 
         .grid-cell {
@@ -49,7 +67,7 @@
         .line-t { color: #ff6b6b; border-bottom: 1px dashed #2a2a2a; }
         .line-m { color: #ffd166; border-bottom: 1px dashed #2a2a2a; }
         .line-b { color: #06d6a0; }
-        .cell-label { font-size: 0.6rem; color: var(--text-muted); align-self: flex-end; margin-top: auto; }
+        .cell-label { font-size: 0.65rem; color: var(--text-muted); align-self: flex-end; margin-top: auto; font-weight: bold; }
 
         /* Modal / Edit Overlay */
         .modal {
@@ -62,10 +80,10 @@
             border: 1px solid #444;
         }
 
-        .modal-title { margin-bottom: 15px; font-size: 1rem; color: var(--accent); }
+        .modal-title { margin-bottom: 15px; font-size: 1rem; color: var(--accent); font-weight: bold; }
 
         .input-group { margin-bottom: 12px; display: flex; flex-direction: column; }
-        .input-group label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; }
+        .input-group label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; font-weight: bold; }
         
         .input-group input {
             background: #111; border: 1px solid #444; color: #fff; padding: 10px;
@@ -91,8 +109,20 @@
 <body>
 
     <h2>3 × 10 LOG MATRIX</h2>
-    <div class="grid-container" id="grid"></div>
-    <button class="clear-btn" onclick="clearAllData()">Clear All Grid Data</button>
+    
+    <div class="matrix-wrapper">
+        <!-- Column Header Titles -->
+        <div class="grid-headers">
+            <div>Back</div>
+            <div>Mid</div>
+            <div>Front</div>
+        </div>
+        
+        <!-- Main Grid -->
+        <div class="grid-container" id="grid"></div>
+        
+        <button class="clear-btn" onclick="clearAllData()">Clear All Grid Data</button>
+    </div>
 
     <!-- Input Modal -->
     <div class="modal" id="modal">
@@ -100,15 +130,15 @@
             <div class="modal-title" id="modal-label">Editing Cell</div>
             
             <div class="input-group">
-                <label>Top Field</label>
+                <label>Top</label>
                 <input type="text" id="input-top" autocomplete="off">
             </div>
             <div class="input-group">
-                <label>Middle Field</label>
+                <label>Middle</label>
                 <input type="text" id="input-mid" autocomplete="off">
             </div>
             <div class="input-group">
-                <label>Bottom Field</label>
+                <label>Bottom</label>
                 <input type="text" id="input-bot" autocomplete="off">
             </div>
 
@@ -122,17 +152,21 @@
     <script>
         const ROWS = 10;
         const COLS = 3;
+        const colMap = { 1: 'B', 2: 'M', 3: 'F' };
+        const colNames = { 1: 'Back', 2: 'Mid', 3: 'Front' };
+        
         let gridData = JSON.parse(localStorage.getItem('gridLogData')) || {};
         let activeCellKey = null;
 
         const gridEl = document.getElementById('grid');
         const modalEl = document.getElementById('modal');
 
-        // Generate Grid
+        // Generate Grid Layout
         for (let r = 1; r <= ROWS; r++) {
             for (let c = 1; c <= COLS; c++) {
                 const cellKey = `${r}_${c}`;
                 const cellData = gridData[cellKey] || { t: '', m: '', b: '' };
+                const colLetter = colMap[c];
 
                 const cell = document.createElement('div');
                 cell.className = 'grid-cell';
@@ -143,7 +177,7 @@
                     <div class="line-preview line-t" id="p-t-${cellKey}">${cellData.t}</div>
                     <div class="line-preview line-m" id="p-m-${cellKey}">${cellData.m}</div>
                     <div class="line-preview line-b" id="p-b-${cellKey}">${cellData.b}</div>
-                    <div class="cell-label">R${r} C${c}</div>
+                    <div class="cell-label">${colLetter}${r}</div>
                 `;
                 gridEl.appendChild(cell);
             }
@@ -151,7 +185,10 @@
 
         function openModal(row, col) {
             activeCellKey = `${row}_${col}`;
-            document.getElementById('modal-label').innerText = `Editing Cell [Row ${row}, Column ${col}]`;
+            const colLetter = colMap[col];
+            const colName = colNames[col];
+            
+            document.getElementById('modal-label').innerText = `Editing ${colName} — Cell ${colLetter}${row}`;
             
             const cellData = gridData[activeCellKey] || { t: '', m: '', b: '' };
             document.getElementById('input-top').value = cellData.t;
@@ -172,13 +209,13 @@
 
             const tVal = document.getElementById('input-top').value;
             const mVal = document.getElementById('input-mid').value;
-            const bVal = document.getElementById('input-bottom').value || document.getElementById('input-bot').value;
+            const bVal = document.getElementById('input-bot').value;
 
-            // Update local state object
+            // Save to local storage state
             gridData[activeCellKey] = { t: tVal, m: mVal, b: bVal };
             localStorage.setItem('gridLogData', JSON.stringify(gridData));
 
-            // Update UI Previews inline instantly
+            // Update UI Previews immediately
             document.getElementById(`p-t-${activeCellKey}`).innerText = tVal;
             document.getElementById(`p-m-${activeCellKey}`).innerText = mVal;
             document.getElementById(`p-b-${activeCellKey}`).innerText = bVal;
@@ -187,7 +224,7 @@
         }
 
         function clearAllData() {
-            if (confirm("Are you sure you want to wipe all cell logs?")) {
+            if (confirm("Are you sure you want to wipe all matrix logs?")) {
                 localStorage.removeItem('gridLogData');
                 gridData = {};
                 document.querySelectorAll('.line-preview').forEach(el => el.innerText = '');
