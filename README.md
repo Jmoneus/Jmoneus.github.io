@@ -16,9 +16,7 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text); padding: 10px; padding-bottom: 60px; }
-        
-        h2 { text-align: center; margin: 10px 0 15px 0; font-weight: 400; font-size: 1.2rem; letter-spacing: 1px; }
+        body { background-color: var(--bg-color); color: var(--text); padding: 15px 10px 60px 10px; }
 
         /* Grid Wrapper for Max Width Constraint */
         .matrix-wrapper {
@@ -26,10 +24,10 @@
             margin: 0 auto;
         }
 
-        /* Column Headers */
+        /* 4-Column Header Layout (Side space + 3 columns) */
         .grid-headers {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: 30px repeat(3, 1fr);
             gap: 8px;
             text-align: center;
             margin-bottom: 8px;
@@ -40,11 +38,22 @@
             letter-spacing: 0.5px;
         }
 
-        /* 3x10 Grid Setup */
+        /* 4-Column Grid Setup */
         .grid-container {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: 30px repeat(3, 1fr);
             gap: 8px;
+            align-items: stretch;
+        }
+
+        /* Row Number Indicators on the Left Side */
+        .row-number-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: var(--text-muted);
+            font-size: 0.95rem;
         }
 
         .grid-cell {
@@ -124,11 +133,10 @@
 </head>
 <body>
 
-    <h2>3 × 10 LOG MATRIX</h2>
-    
     <div class="matrix-wrapper">
-        <!-- Column Header Titles -->
+        <!-- Column Header Titles with blank spacer for the numbers column -->
         <div class="grid-headers">
+            <div></div>
             <div>Back</div>
             <div>Mid</div>
             <div>Front</div>
@@ -195,11 +203,17 @@
             return out;
         }
 
-        // Generate Grid Layout
+        // Generate Grid Layout Row by Row
         for (let r = 1; r <= ROWS; r++) {
+            // 1. Add the row indicator on the side first
+            const sideLabel = document.createElement('div');
+            sideLabel.className = 'row-number-label';
+            sideLabel.innerText = r;
+            gridEl.appendChild(sideLabel);
+
+            // 2. Add the 3 interaction cells for this row
             for (let c = 1; c <= COLS; c++) {
                 const cellKey = `${r}_${c}`;
-                // Default structure includes text values and their corresponding serial slots
                 const d = gridData[cellKey] || { t: '', ts: '', m: '', ms: '', b: '', bs: '' };
                 const colLetter = colMap[c];
 
