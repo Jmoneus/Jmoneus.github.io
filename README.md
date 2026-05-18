@@ -153,7 +153,7 @@
         <div class="modal-content">
             <div class="modal-title" id="modal-label">Editing Cell</div>
             
-            <!-- Top Group (Hidden dynamically if Row 1) -->
+            <!-- Top Group (Hidden dynamically if Column 1 / Back Column) -->
             <div class="input-group" id="group-top">
                 <label>Top</label>
                 <input type="text" id="input-top" autocomplete="off" placeholder="Enter text...">
@@ -216,7 +216,7 @@
                 const cellKey = `${r}_${c}`;
                 const d = gridData[cellKey] || { t: '', ts: '', m: '', ms: '', b: '', bs: '' };
                 const colLetter = colMap[c];
-                const isRow1 = (r === 1);
+                const isBackColumn = (c === 1); // Column 1 is the Back column
 
                 const cell = document.createElement('div');
                 cell.className = 'grid-cell';
@@ -224,7 +224,7 @@
                 cell.onclick = () => openModal(r, c);
                 
                 cell.innerHTML = `
-                    <div class="line-preview line-t" id="p-t-${cellKey}" style="${isRow1 ? 'display: none;' : ''}">${getCellHtml(d.t, d.ts)}</div>
+                    <div class="line-preview line-t" id="p-t-${cellKey}" style="${isBackColumn ? 'display: none;' : ''}">${getCellHtml(d.t, d.ts)}</div>
                     <div class="line-preview line-m" id="p-m-${cellKey}">${getCellHtml(d.m, d.ms)}</div>
                     <div class="line-preview line-b" id="p-b-${cellKey}">${getCellHtml(d.b, d.bs)}</div>
                     <div class="cell-label">${colLetter}${r}</div>
@@ -240,8 +240,8 @@
             
             document.getElementById('modal-label').innerText = `Editing ${colName} — Cell ${colLetter}${row}`;
             
-            // Show/Hide Top inputs depending on Row 1 selection
-            if (row === 1) {
+            // Show/Hide Top inputs depending on if it's Column 1 (Back Column)
+            if (col === 1) {
                 document.getElementById('group-top').style.display = 'none';
             } else {
                 document.getElementById('group-top').style.display = 'flex';
@@ -260,8 +260,8 @@
             
             modalEl.style.display = 'flex';
             
-            // Set dynamic initial focus
-            if (row === 1) {
+            // Set dynamic initial focus (Skip Top if in Back column)
+            if (col === 1) {
                 document.getElementById('input-mid').focus();
             } else {
                 document.getElementById('input-top').focus();
@@ -276,11 +276,11 @@
         function saveCellData() {
             if (!activeCellKey) return;
 
-            const isRow1 = activeCellKey.startsWith('1_');
+            const isBackColumn = activeCellKey.endsWith('_1');
 
-            // Force clear Top values if editing row 1
-            const tVal = isRow1 ? '' : document.getElementById('input-top').value;
-            const tsVal = isRow1 ? '' : document.getElementById('input-top-sn').value;
+            // Force clear Top values if editing the back column
+            const tVal = isBackColumn ? '' : document.getElementById('input-top').value;
+            const tsVal = isBackColumn ? '' : document.getElementById('input-top-sn').value;
             
             const mVal = document.getElementById('input-mid').value;
             const msVal = document.getElementById('input-mid-sn').value;
