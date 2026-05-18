@@ -16,7 +16,7 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text); padding: 15px 10px 60px 10px; }
+        body { background-color: var(--bg-color); color: var(--text); padding: 20px 10px 60px 10px; }
 
         /* Grid Wrapper for Max Width Constraint */
         .matrix-wrapper {
@@ -134,7 +134,7 @@
 <body>
 
     <div class="matrix-wrapper">
-        <!-- Column Header Titles with blank spacer for the numbers column -->
+        <!-- Column Header Titles -->
         <div class="grid-headers">
             <div></div>
             <div>Back</div>
@@ -153,8 +153,8 @@
         <div class="modal-content">
             <div class="modal-title" id="modal-label">Editing Cell</div>
             
-            <!-- Top Group -->
-            <div class="input-group">
+            <!-- Top Group (Hidden dynamically if Row 1) -->
+            <div class="input-group" id="group-top">
                 <label>Top</label>
                 <input type="text" id="input-top" autocomplete="off" placeholder="Enter text...">
                 <input type="text" id="input-top-sn" class="sn-input" autocomplete="off" placeholder="Serial Number / ID">
@@ -205,17 +205,18 @@
 
         // Generate Grid Layout Row by Row
         for (let r = 1; r <= ROWS; r++) {
-            // 1. Add the row indicator on the side first
+            // 1. Add row indicator
             const sideLabel = document.createElement('div');
             sideLabel.className = 'row-number-label';
             sideLabel.innerText = r;
             gridEl.appendChild(sideLabel);
 
-            // 2. Add the 3 interaction cells for this row
+            // 2. Add interaction cells
             for (let c = 1; c <= COLS; c++) {
                 const cellKey = `${r}_${c}`;
                 const d = gridData[cellKey] || { t: '', ts: '', m: '', ms: '', b: '', bs: '' };
                 const colLetter = colMap[c];
+                const isRow1 = (r === 1);
 
                 const cell = document.createElement('div');
                 cell.className = 'grid-cell';
@@ -223,7 +224,7 @@
                 cell.onclick = () => openModal(r, c);
                 
                 cell.innerHTML = `
-                    <div class="line-preview line-t" id="p-t-${cellKey}">${getCellHtml(d.t, d.ts)}</div>
+                    <div class="line-preview line-t" id="p-t-${cellKey}" style="${isRow1 ? 'display: none;' : ''}">${getCellHtml(d.t, d.ts)}</div>
                     <div class="line-preview line-m" id="p-m-${cellKey}">${getCellHtml(d.m, d.ms)}</div>
                     <div class="line-preview line-b" id="p-b-${cellKey}">${getCellHtml(d.b, d.bs)}</div>
                     <div class="cell-label">${colLetter}${r}</div>
@@ -239,6 +240,13 @@
             
             document.getElementById('modal-label').innerText = `Editing ${colName} — Cell ${colLetter}${row}`;
             
+            // Show/Hide Top inputs depending on Row 1 selection
+            if (row === 1) {
+                document.getElementById('group-top').style.display = 'none';
+            } else {
+                document.getElementById('group-top').style.display = 'flex';
+            }
+
             const d = gridData[activeCellKey] || { t: '', ts: '', m: '', ms: '', b: '', bs: '' };
             
             document.getElementById('input-top').value = d.t || '';
@@ -251,7 +259,13 @@
             document.getElementById('input-bot-sn').value = d.bs || '';
             
             modalEl.style.display = 'flex';
-            document.getElementById('input-top').focus();
+            
+            // Set dynamic initial focus
+            if (row === 1) {
+                document.getElementById('input-mid').focus();
+            } else {
+                document.getElementById('input-top').focus();
+            }
         }
 
         function closeModal() {
@@ -262,8 +276,11 @@
         function saveCellData() {
             if (!activeCellKey) return;
 
-            const tVal = document.getElementById('input-top').value;
-            const tsVal = document.getElementById('input-top-sn').value;
+            const isRow1 = activeCellKey.startsWith('1_');
+
+            // Force clear Top values if editing row 1
+            const tVal = isRow1 ? '' : document.getElementById('input-top').value;
+            const tsVal = isRow1 ? '' : document.getElementById('input-top-sn').value;
             
             const mVal = document.getElementById('input-mid').value;
             const msVal = document.getElementById('input-mid-sn').value;
@@ -271,11 +288,11 @@
             const bVal = document.getElementById('input-bot').value;
             const bsVal = document.getElementById('input-bot-sn').value;
 
-            // Save text and serial properties to local storage
+            // Save clean data mapping back to local storage
             gridData[activeCellKey] = { t: tVal, ts: tsVal, m: mVal, ms: msVal, b: bVal, bs: bsVal };
             localStorage.setItem('gridLogData', JSON.stringify(gridData));
 
-            // Update UI Previews inline immediately
+            // Update DOM text representations instantly
             document.getElementById(`p-t-${activeCellKey}`).innerHTML = getCellHtml(tVal, tsVal);
             document.getElementById(`p-m-${activeCellKey}`).innerHTML = getCellHtml(mVal, msVal);
             document.getElementById(`p-b-${activeCellKey}`).innerHTML = getCellHtml(bVal, bsVal);
@@ -284,7 +301,7 @@
         }
 
         function clearAllData() {
-            if (confirm("Are you sure you want to wipe all matrix logs and serial numbers?")) {
+            if (confirm("Are you sure you want to wipe all matrix logs and serial numbers from this device?")) {
                 localStorage.removeItem('gridLogData');
                 gridData = {};
                 document.querySelectorAll('.line-preview').forEach(el => el.innerHTML = '');
