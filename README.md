@@ -216,15 +216,16 @@
                 const cellKey = `${r}_${c}`;
                 const d = gridData[cellKey] || { t: '', ts: '', m: '', ms: '', b: '', bs: '' };
                 const colLetter = colMap[c];
-                const isBackColumn = (c === 1); // Column 1 is the Back column
+                const isBackColumn = (c === 1); 
 
                 const cell = document.createElement('div');
                 cell.className = 'grid-cell';
                 cell.id = `cell-${cellKey}`;
                 cell.onclick = () => openModal(r, c);
                 
+                // Changed display:none to an active structural wireframe spacer line for Column 1
                 cell.innerHTML = `
-                    <div class="line-preview line-t" id="p-t-${cellKey}" style="${isBackColumn ? 'display: none;' : ''}">${getCellHtml(d.t, d.ts)}</div>
+                    <div class="line-preview line-t" id="p-t-${cellKey}">${isBackColumn ? '' : getCellHtml(d.t, d.ts)}</div>
                     <div class="line-preview line-m" id="p-m-${cellKey}">${getCellHtml(d.m, d.ms)}</div>
                     <div class="line-preview line-b" id="p-b-${cellKey}">${getCellHtml(d.b, d.bs)}</div>
                     <div class="cell-label">${colLetter}${r}</div>
@@ -260,7 +261,6 @@
             
             modalEl.style.display = 'flex';
             
-            // Set dynamic initial focus (Skip Top if in Back column)
             if (col === 1) {
                 document.getElementById('input-mid').focus();
             } else {
@@ -278,7 +278,6 @@
 
             const isBackColumn = activeCellKey.endsWith('_1');
 
-            // Force clear Top values if editing the back column
             const tVal = isBackColumn ? '' : document.getElementById('input-top').value;
             const tsVal = isBackColumn ? '' : document.getElementById('input-top-sn').value;
             
@@ -288,12 +287,10 @@
             const bVal = document.getElementById('input-bot').value;
             const bsVal = document.getElementById('input-bot-sn').value;
 
-            // Save clean data mapping back to local storage
             gridData[activeCellKey] = { t: tVal, ts: tsVal, m: mVal, ms: msVal, b: bVal, bs: bsVal };
             localStorage.setItem('gridLogData', JSON.stringify(gridData));
 
-            // Update DOM text representations instantly
-            document.getElementById(`p-t-${activeCellKey}`).innerHTML = getCellHtml(tVal, tsVal);
+            document.getElementById(`p-t-${activeCellKey}`).innerHTML = isBackColumn ? '' : getCellHtml(tVal, tsVal);
             document.getElementById(`p-m-${activeCellKey}`).innerHTML = getCellHtml(mVal, msVal);
             document.getElementById(`p-b-${activeCellKey}`).innerHTML = getCellHtml(bVal, bsVal);
 
