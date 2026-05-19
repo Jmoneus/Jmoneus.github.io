@@ -74,10 +74,32 @@
         .btn-excel { background: #23a964; color: #fff; }
         .btn-print { background: #ff9f43; color: #fff; }
         .clear-btn { background: #331c1c; color: #ff6b6b; border: 1px solid #552222; margin-top: 15px; width: 100%; font-size: 0.9rem; padding: 10px; }
+
+        /* --- STYLES STRICLY FOR PRINTER / PREVIEW ENGINE --- */
+        #print-section { display: none; }
+
+        @media print {
+            body { background: #fff !important; color: #000 !important; padding: 10px !important; }
+            .matrix-wrapper, .modal, .control-panel { display: none !important; }
+            #print-section { display: block !important; width: 100% !important; }
+            
+            h2 { font-size: 13px; text-transform: uppercase; margin-bottom: 12px; color: #000; font-weight: bold; }
+            table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+            th, td { border: 1px solid #000 !important; padding: 5px 3px; font-size: 9px; text-align: center; word-wrap: break-word; white-space: normal; color: #000 !important; }
+            th { background: #f0f0f0 !important; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            
+            .section-hdr { background: #e0e0e0 !important; font-weight: bold; text-transform: uppercase; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .section-hdr td { text-align: left !important; padding-left: 6px; font-size: 10px; }
+            .pos-lbl { font-weight: bold; background: #f9f9f9 !important; width: 50px; text-transform: uppercase; font-size: 8px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
     </style>
 </head>
 <body>
 
+    <!-- Target Area Hidden from Phone Display, Becomes Visible Only to Printer Layout engine -->
+    <div id="print-section"></div>
+
+    <!-- Active App Layout Layer -->
     <div class="matrix-wrapper">
         <div class="grid-headers">
             <div></div><div>Back</div><div>Mid</div><div>Front</div>
@@ -85,7 +107,6 @@
         
         <div class="grid-container" id="grid"></div>
         
-        <!-- Share, Export, & Print Control Center -->
         <div class="control-panel">
             <div class="panel-title">Share & Output Tools</div>
             <div class="btn-group">
@@ -259,9 +280,9 @@
             document.body.appendChild(link); link.click(); document.body.removeChild(link);
         }
 
-        // --- New Direct Paper Printing Function Engine ---
+        // --- FIXED: In-Page Single Document Print Generator Engine ---
         function printMatrix() {
-            const printWindow = window.open('', '_blank');
+            const printSection = document.getElementById('print-section');
             const layoutMap = [
                 { title: "Back Row", colIndex: 1 },
                 { title: "Middle Row", colIndex: 2 },
@@ -271,10 +292,9 @@
             let tableRowsHtml = "";
 
             layoutMap.forEach(section => {
-                // Section Title Row
                 tableRowsHtml += `<tr class="section-hdr"><td colspan="11">${section.title}</td></tr>`;
                 
-                // Top Sub-Row
+                // top line
                 tableRowsHtml += `<tr><td class="pos-lbl">top</td>`;
                 for (let r = 1; r <= ROWS; r++) {
                     const d = gridData[`${r}_${section.colIndex}`] || {};
@@ -282,7 +302,7 @@
                 }
                 tableRowsHtml += `</tr>`;
 
-                // Mid Sub-Row
+                // mid line
                 tableRowsHtml += `<tr><td class="pos-lbl">mid</td>`;
                 for (let r = 1; r <= ROWS; r++) {
                     const d = gridData[`${r}_${section.colIndex}`] || {};
@@ -290,7 +310,7 @@
                 }
                 tableRowsHtml += `</tr>`;
 
-                // Bottom Sub-Row
+                // bottom line
                 tableRowsHtml += `<tr><td class="pos-lbl">bottom</td>`;
                 for (let r = 1; r <= ROWS; r++) {
                     const d = gridData[`${r}_${section.colIndex}`] || {};
@@ -299,42 +319,26 @@
                 tableRowsHtml += `</tr>`;
             });
 
-            printWindow.document.write(`
-                <html>
-                <head>
-                    <title>Matrix Log Physical Report</title>
-                    <style>
-                        body { font-family: -apple-system, system-ui, sans-serif; padding: 20px; color: #000; background: #fff; }
-                        h2 { font-size: 14px; text-transform: uppercase; margin-bottom: 15px; letter-spacing: 1px; }
-                        table { width: 100%; border-collapse: collapse; table-layout: fixed; page-break-inside: auto; }
-                        tr { page-break-inside: avoid; page-break-after: auto; }
-                        th, td { border: 1px solid #000; padding: 6px 4px; font-size: 10px; text-align: center; word-wrap: break-word; white-space: normal; overflow: visible; }
-                        th { background: #f2f2f2; font-weight: bold; }
-                        .section-hdr { background: #e6e6e6; font-weight: bold; text-transform: uppercase; }
-                        .section-hdr td { text-align: left; padding-left: 8px; font-size: 11px; letter-spacing: 0.5px; }
-                        .pos-lbl { font-weight: bold; background: #fafafa; width: 60px; text-transform: uppercase; font-size: 9px; }
-                    </style>
-                </head>
-                <body>
-                    <h2>Matrix Log Verification Sheet — ${new Date().toLocaleDateString()}</h2>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th style="width: 55px;">Position</th>
-                                <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${tableRowsHtml}
-                        </tbody>
-                    </table>
-                    <script>
-                        window.onload = function() { window.print(); window.close(); }
-                    <\/script>
-                </body>
-                </html>
-            `);
-            printWindow.document.close();
+            // Re-write contents cleanly into the structural hidden container layer
+            printSection.innerHTML = `
+                <h2>Matrix Log Verification Sheet — ${new Date().toLocaleDateString()}</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 55px;">Position</th>
+                            <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRowsHtml}
+                    </tbody>
+                </table>
+            `;
+            
+            // Give system DOM thread a 50ms pause to guarantee table rendering finishes before popping layout menu
+            setTimeout(() => {
+                window.print();
+            }, 50);
         }
 
         function clearAllData() {
