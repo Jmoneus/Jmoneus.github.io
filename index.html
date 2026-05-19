@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Vehicle Grid Logger</title>
+    <title>Seedpack Inventory Diagram</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -39,7 +39,6 @@
         }
         .grid-cell:active { border-color: var(--accent); background: #252525; }
 
-        /* Modified to allow elegant structural text wrapping */
         .line-preview { font-size: 0.7rem; white-space: normal; word-wrap: break-word; min-height: 18px; line-height: 1.2; padding: 4px 0; }
         .line-t { color: #ff6b6b; border-bottom: 1px dashed #2a2a2a; }
         .line-m { color: #ffd166; border-bottom: 1px dashed #2a2a2a; }
@@ -76,15 +75,19 @@
         .btn-print { background: #ff9f43; color: #fff; }
         .clear-btn { background: #331c1c; color: #ff6b6b; border: 1px solid #552222; margin-top: 15px; width: 100%; font-size: 0.9rem; padding: 10px; }
 
-        /* Styles specifically targeting printer view layouts */
+        /* --- STYLES STRICLY FOR PRINTER / PREVIEW ENGINE --- */
         #print-section { display: none; }
 
         @media print {
             body { background: #fff !important; color: #000 !important; padding: 10px !important; }
             .matrix-wrapper, .modal, .control-panel { display: none !important; }
-            #print-section { display: block !important; width: 100% !important; }
+            #print-section { display: block !important; width: 100% !important; margin-top: 0 !important; padding-top: 0 !important; }
             
-            h2 { font-size: 13px; text-transform: uppercase; margin-bottom: 12px; color: #000; font-weight: bold; }
+            /* Print Document Header Bar Layout */
+            .doc-header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #000 !important; padding-bottom: 4px; margin-bottom: 12px; }
+            .doc-title { font-size: 14px; font-weight: bold; text-transform: uppercase; color: #000 !important; margin: 0; }
+            .doc-timestamp { font-size: 9px; color: #333 !important; font-weight: normal; margin: 0; }
+
             table { width: 100%; border-collapse: collapse; table-layout: fixed; }
             th, td { border: 1px solid #000 !important; padding: 5px 3px; font-size: 9px; text-align: center; word-wrap: break-word; white-space: normal; color: #000 !important; }
             th { background: #f0f0f0 !important; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -166,7 +169,6 @@
         const gridEl = document.getElementById('grid');
         const modalEl = document.getElementById('modal');
 
-        // Layout formatter forces the serial box onto a fresh line beneath the text description
         function getCellHtml(text, sn) {
             if (!text && !sn) return '';
             if (text && sn) {
@@ -241,14 +243,12 @@
             } catch(err) { alert("Error packing grid dataset."); }
         }
 
-        // Print engine formatter: forces an automatic wrap break for paper display
         function formatPrintText(text, sn) {
             if (!text && !sn) return "";
             if (text && sn) return `${text}<br><span style="color:#666; font-size:8px;">[${sn}]</span>`;
             return sn ? `[${sn}]` : text;
         }
 
-        // CSV element formatter: uses enclosed quotes and \n to trigger Alt+Enter inside Excel
         function formatCSVCell(text, sn) {
             if (!text && !sn) return "";
             let val = text || "";
@@ -257,20 +257,12 @@
         }
 
         function exportToCSV() {
-            // Changed Header column marker to "ROW"
             let csvContent = "data:text/csv;charset=utf-8,ROW,1,2,3,4,5,6,7,8,9,10\r\n";
-            
-            // Layout naming config simplified to match your instructions
-            const layoutMap = [
-                { title: "Back", colIndex: 1 }, 
-                { title: "Middle", colIndex: 2 }, 
-                { title: "Front", colIndex: 3 }
-            ];
+            const layoutMap = [{ title: "Back", colIndex: 1 }, { title: "Middle", colIndex: 2 }, { title: "Front", colIndex: 3 }];
 
             layoutMap.forEach(section => {
                 csvContent += `"${section.title}",,,,,,,,,, \r\n`;
                 
-                // COMPLETELY REMOVE top row lines if dealing with the Back column
                 if (section.colIndex !== 1) {
                     let topRow = ["top"];
                     for (let r = 1; r <= ROWS; r++) {
@@ -304,17 +296,12 @@
 
         function printMatrix() {
             const printSection = document.getElementById('print-section');
-            const layoutMap = [
-                { title: "Back", colIndex: 1 }, 
-                { title: "Middle", colIndex: 2 }, 
-                { title: "Front", colIndex: 3 }
-            ];
+            const layoutMap = [{ title: "Back", colIndex: 1 }, { title: "Middle", colIndex: 2 }, { title: "Front", colIndex: 3 }];
             let tableRowsHtml = "";
 
             layoutMap.forEach(section => {
                 tableRowsHtml += `<tr class="section-hdr"><td colspan="11">${section.title}</td></tr>`;
                 
-                // Completely skip top sub-row creation if rendering the Back column section
                 if (section.colIndex !== 1) {
                     tableRowsHtml += `<tr><td class="pos-lbl">top</td>`;
                     for (let r = 1; r <= ROWS; r++) {
@@ -339,8 +326,16 @@
                 tableRowsHtml += `</tr>`;
             });
 
+            // Capture precise localized timestamp configuration
+            const now = new Date();
+            const formattedDateTime = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+            // Render Document Header section with clean typography structures
             printSection.innerHTML = `
-                <h2>Matrix Log Verification Sheet — ${new Date().toLocaleDateString()}</h2>
+                <div class="doc-header">
+                    <h1 class="doc-title">Seedpack Inventory Diagram</h1>
+                    <div class="doc-timestamp">${formattedDateTime}</div>
+                </div>
                 <table>
                     <thead>
                         <tr><th style="width: 55px;">ROW</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th></tr>
