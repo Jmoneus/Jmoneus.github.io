@@ -65,13 +65,14 @@
         .input-group input:focus { border-color: var(--accent); }
         .input-group input.sn-input { margin-top: 6px; background: #161616; border: 1px solid #333; font-size: 0.85rem; padding: 6px 10px; color: #b3b3b3; }
 
-        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
-        button { flex: 1; padding: 12px; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; font-weight: bold; }
+        .btn-group { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+        button { flex: 1; min-width: 120px; padding: 12px; border: none; border-radius: 6px; font-size: 0.95rem; cursor: pointer; font-weight: bold; }
         
         .btn-save { background: var(--accent); color: #fff; }
         .btn-cancel { background: #444; color: #fff; }
         .btn-share { background: #1f6feb; color: #fff; }
         .btn-excel { background: #23a964; color: #fff; }
+        .btn-print { background: #ff9f43; color: #fff; }
         .clear-btn { background: #331c1c; color: #ff6b6b; border: 1px solid #552222; margin-top: 15px; width: 100%; font-size: 0.9rem; padding: 10px; }
     </style>
 </head>
@@ -84,12 +85,13 @@
         
         <div class="grid-container" id="grid"></div>
         
-        <!-- Share & Export Control Center -->
+        <!-- Share, Export, & Print Control Center -->
         <div class="control-panel">
-            <div class="panel-title">Share & Data Exports</div>
+            <div class="panel-title">Share & Output Tools</div>
             <div class="btn-group">
-                <button class="btn-share" onclick="generateShareLink()">Copy Share Link</button>
-                <button class="btn-excel" onclick="exportToCSV()">Export Spreadsheet</button>
+                <button class="btn-share" onclick="generateShareLink()">Share Link</button>
+                <button class="btn-excel" onclick="exportToCSV()">Export CSV</button>
+                <button class="btn-print" onclick="printMatrix()">Print Layout</button>
             </div>
             <button class="clear-btn" onclick="clearAllData()">Wipe Local Grid Cache</button>
         </div>
@@ -127,7 +129,6 @@
         
         let gridData = {};
 
-        // Parse payload values out of link if app initialized via Shared link
         const urlParams = new URLSearchParams(window.location.search);
         const sharedDataParam = urlParams.get('matrix');
 
@@ -213,62 +214,40 @@
             try {
                 const base64Data = btoa(encodeURIComponent(JSON.stringify(gridData)));
                 const shareUrl = `${window.location.origin}${window.location.pathname}?matrix=${base64Data}`;
-                navigator.clipboard.writeText(shareUrl).then(() => {
-                    alert("Share Link Copied!");
-                }).catch(() => {
-                    prompt("Copy link manually:", shareUrl);
-                });
+                navigator.clipboard.writeText(shareUrl).then(() => { alert("Share Link Copied!"); }).catch(() => { prompt("Copy link manually:", shareUrl); });
             } catch(err) { alert("Error packing grid dataset."); }
         }
 
-        // --- Transposed Clean Formatting CSV Export Logic ---
+        function formatCellText(text, sn) {
+            if (!text && !sn) return "";
+            return sn ? `${text} [${sn}]` : text;
+        }
+
         function exportToCSV() {
-            let csvContent = "data:text/csv;charset=utf-8,";
-            
-            // Header row labeling columns 1 through 10
-            csvContent += "Position,1,2,3,4,5,6,7,8,9,10\r\n";
-
-            // Internal formatting handler to bundle strings together cleanly inside cells
-            function formatCell(text, sn) {
-                if (!text && !sn) return "";
-                let cellVal = text || "";
-                if (sn) cellVal += ` [${sn}]`;
-                return `"${cellVal.replace(/"/g, '""')}"`;
-            }
-
-            // Sections layout scheme matching your columns (1: Back, 2: Mid, 3: Front)
-            const layoutMap = [
-                { title: "Back Row", colIndex: 1 },
-                { title: "Middle Row", colIndex: 2 },
-                { title: "Front Row", colIndex: 3 }
-            ];
+            let csvContent = "data:text/csv;charset=utf-8,Position,1,2,3,4,5,6,7,8,9,10\r\n";
+            const layoutMap = [{ title: "Back Row", colIndex: 1 }, { title: "Middle Row", colIndex: 2 }, { title: "Front Row", colIndex: 3 }];
 
             layoutMap.forEach(section => {
-                // 1. Add Spacer row section title line
                 csvContent += `"${section.title}",,,,,,,,,, \r\n`;
-
-                // 2. Process Top Row data elements
+                
                 let topRow = ["top"];
                 for (let r = 1; r <= ROWS; r++) {
                     const d = gridData[`${r}_${section.colIndex}`] || {};
-                    // Leave completely empty if it's the Back column (since top text was removed)
-                    topRow.push(section.colIndex === 1 ? "" : formatCell(d.t, d.ts));
+                    topRow.push(section.colIndex === 1 ? "" : `"${formatCellText(d.t, d.ts).replace(/"/g, '""')}"`);
                 }
                 csvContent += topRow.join(",") + "\r\n";
 
-                // 3. Process Mid Row data elements
                 let midRow = ["mid"];
                 for (let r = 1; r <= ROWS; r++) {
                     const d = gridData[`${r}_${section.colIndex}`] || {};
-                    midRow.push(formatCell(d.m, d.ms));
+                    midRow.push(`"${formatCellText(d.m, d.ms).replace(/"/g, '""')}"`);
                 }
                 csvContent += midRow.join(",") + "\r\n";
 
-                // 4. Process Bottom Row data elements
                 let botRow = ["bottom"];
                 for (let r = 1; r <= ROWS; r++) {
                     const d = gridData[`${r}_${section.colIndex}`] || {};
-                    botRow.push(formatCell(d.b, d.bs));
+                    botRow.push(`"${formatCellText(d.b, d.bs).replace(/"/g, '""')}"`);
                 }
                 csvContent += botRow.join(",") + "\r\n";
             });
@@ -277,15 +256,89 @@
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
             link.setAttribute("download", `matrix_report_${new Date().toISOString().slice(0,10)}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        }
+
+        // --- New Direct Paper Printing Function Engine ---
+        function printMatrix() {
+            const printWindow = window.open('', '_blank');
+            const layoutMap = [
+                { title: "Back Row", colIndex: 1 },
+                { title: "Middle Row", colIndex: 2 },
+                { title: "Front Row", colIndex: 3 }
+            ];
+
+            let tableRowsHtml = "";
+
+            layoutMap.forEach(section => {
+                // Section Title Row
+                tableRowsHtml += `<tr class="section-hdr"><td colspan="11">${section.title}</td></tr>`;
+                
+                // Top Sub-Row
+                tableRowsHtml += `<tr><td class="pos-lbl">top</td>`;
+                for (let r = 1; r <= ROWS; r++) {
+                    const d = gridData[`${r}_${section.colIndex}`] || {};
+                    tableRowsHtml += `<td>${section.colIndex === 1 ? '' : formatCellText(d.t, d.ts)}</td>`;
+                }
+                tableRowsHtml += `</tr>`;
+
+                // Mid Sub-Row
+                tableRowsHtml += `<tr><td class="pos-lbl">mid</td>`;
+                for (let r = 1; r <= ROWS; r++) {
+                    const d = gridData[`${r}_${section.colIndex}`] || {};
+                    tableRowsHtml += `<td>${formatCellText(d.m, d.ms)}</td>`;
+                }
+                tableRowsHtml += `</tr>`;
+
+                // Bottom Sub-Row
+                tableRowsHtml += `<tr><td class="pos-lbl">bottom</td>`;
+                for (let r = 1; r <= ROWS; r++) {
+                    const d = gridData[`${r}_${section.colIndex}`] || {};
+                    tableRowsHtml += `<td>${formatCellText(d.b, d.bs)}</td>`;
+                }
+                tableRowsHtml += `</tr>`;
+            });
+
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>Matrix Log Physical Report</title>
+                    <style>
+                        body { font-family: -apple-system, system-ui, sans-serif; padding: 20px; color: #000; background: #fff; }
+                        h2 { font-size: 14px; text-transform: uppercase; margin-bottom: 15px; letter-spacing: 1px; }
+                        table { width: 100%; border-collapse: collapse; table-layout: fixed; page-break-inside: auto; }
+                        tr { page-break-inside: avoid; page-break-after: auto; }
+                        th, td { border: 1px solid #000; padding: 6px 4px; font-size: 10px; text-align: center; word-wrap: break-word; white-space: normal; overflow: visible; }
+                        th { background: #f2f2f2; font-weight: bold; }
+                        .section-hdr { background: #e6e6e6; font-weight: bold; text-transform: uppercase; }
+                        .section-hdr td { text-align: left; padding-left: 8px; font-size: 11px; letter-spacing: 0.5px; }
+                        .pos-lbl { font-weight: bold; background: #fafafa; width: 60px; text-transform: uppercase; font-size: 9px; }
+                    </style>
+                </head>
+                <body>
+                    <h2>Matrix Log Verification Sheet — ${new Date().toLocaleDateString()}</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 55px;">Position</th>
+                                <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableRowsHtml}
+                        </tbody>
+                    </table>
+                    <script>
+                        window.onload = function() { window.print(); window.close(); }
+                    <\/script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
         }
 
         function clearAllData() {
-            if (confirm("Wipe local grid cache?")) {
-                localStorage.removeItem('gridLogData'); gridData = {}; renderGrid();
-            }
+            if (confirm("Wipe local grid cache?")) { localStorage.removeItem('gridLogData'); gridData = {}; renderGrid(); }
         }
 
         renderGrid();
