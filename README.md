@@ -86,10 +86,10 @@
         
         <!-- Share & Export Control Center -->
         <div class="control-panel">
-            <div class="panel-title">Share Matrix Logs</div>
+            <div class="panel-title">Share & Data Exports</div>
             <div class="btn-group">
                 <button class="btn-share" onclick="generateShareLink()">Copy Share Link</button>
-                <button class="btn-excel" onclick="exportToCSV()">Export to Excel</button>
+                <button class="btn-excel" onclick="exportToCSV()">Export Spreadsheet</button>
             </div>
             <button class="clear-btn" onclick="clearAllData()">Wipe Local Grid Cache</button>
         </div>
@@ -127,20 +127,16 @@
         
         let gridData = {};
 
-        // --- URL Parameter Data Parsing On App Initialization ---
+        // Parse payload values out of link if app initialized via Shared link
         const urlParams = new URLSearchParams(window.location.search);
         const sharedDataParam = urlParams.get('matrix');
 
         if (sharedDataParam) {
             try {
-                // Decode payload cleanly from text link string
                 gridData = JSON.parse(decodeURIComponent(atob(sharedDataParam)));
-                // Persist the shared view to local storage so they don't lose it
                 localStorage.setItem('gridLogData', JSON.stringify(gridData));
-                // Clean the URL address bar back to base file path
                 window.history.replaceState({}, document.title, window.location.pathname);
             } catch (e) {
-                alert("Failed parsing link packet dataset.");
                 gridData = JSON.parse(localStorage.getItem('gridLogData')) || {};
             }
         } else {
@@ -213,59 +209,81 @@
             renderGrid(); closeModal();
         }
 
-        // --- Sharing Logic: Compresses entire local state object safely into standard URI string ---
         function generateShareLink() {
             try {
                 const base64Data = btoa(encodeURIComponent(JSON.stringify(gridData)));
                 const shareUrl = `${window.location.origin}${window.location.pathname}?matrix=${base64Data}`;
-                
                 navigator.clipboard.writeText(shareUrl).then(() => {
-                    alert("Share Link Copied to Clipboard! Send it to your boss via email or text.");
+                    alert("Share Link Copied!");
                 }).catch(() => {
-                    // Fallback if browser security blocks automated copying
-                    prompt("Copy this share link manually:", shareUrl);
+                    prompt("Copy link manually:", shareUrl);
                 });
-            } catch(err) {
-                alert("Error packing grid link data.");
-            }
+            } catch(err) { alert("Error packing grid dataset."); }
         }
 
-        // --- Export Logic: Converts object array data structured nicely to downloadable CSV file format ---
+        // --- Transposed Clean Formatting CSV Export Logic ---
         function exportToCSV() {
             let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Cell ID,Column,Row,Top Text,Top S/N,Middle Text,Middle S/N,Bottom Text,Bottom S/N\r\n";
+            
+            // Header row labeling columns 1 through 10
+            csvContent += "Position,1,2,3,4,5,6,7,8,9,10\r\n";
 
-            for (let r = 1; r <= ROWS; r++) {
-                for (let c = 1; c <= COLS; c++) {
-                    const cellKey = `${r}_${c}`;
-                    const d = gridData[cellKey] || { t: '', ts: '', m: '', ms: '', b: '', bs: '' };
-                    
-                    const rowData = [
-                        `${colMap[c]}${r}`,
-                        colNames[c],
-                        r,
-                        `"${(d.t || '').replace(/"/g, '""')}"`,
-                        `"${(d.ts || '').replace(/"/g, '""')}"`,
-                        `"${(d.m || '').replace(/"/g, '""')}"`,
-                        `"${(d.ms || '').replace(/"/g, '""')}"`,
-                        `"${(d.b || '').replace(/"/g, '""')}"`,
-                        `"${(d.bs || '').replace(/"/g, '""')}"`
-                    ];
-                    csvContent += rowData.join(",") + "\r\n";
-                }
+            // Internal formatting handler to bundle strings together cleanly inside cells
+            function formatCell(text, sn) {
+                if (!text && !sn) return "";
+                let cellVal = text || "";
+                if (sn) cellVal += ` [${sn}]`;
+                return `"${cellVal.replace(/"/g, '""')}"`;
             }
+
+            // Sections layout scheme matching your columns (1: Back, 2: Mid, 3: Front)
+            const layoutMap = [
+                { title: "Back Row", colIndex: 1 },
+                { title: "Middle Row", colIndex: 2 },
+                { title: "Front Row", colIndex: 3 }
+            ];
+
+            layoutMap.forEach(section => {
+                // 1. Add Spacer row section title line
+                csvContent += `"${section.title}",,,,,,,,,, \r\n`;
+
+                // 2. Process Top Row data elements
+                let topRow = ["top"];
+                for (let r = 1; r <= ROWS; r++) {
+                    const d = gridData[`${r}_${section.colIndex}`] || {};
+                    // Leave completely empty if it's the Back column (since top text was removed)
+                    topRow.push(section.colIndex === 1 ? "" : formatCell(d.t, d.ts));
+                }
+                csvContent += topRow.join(",") + "\r\n";
+
+                // 3. Process Mid Row data elements
+                let midRow = ["mid"];
+                for (let r = 1; r <= ROWS; r++) {
+                    const d = gridData[`${r}_${section.colIndex}`] || {};
+                    midRow.push(formatCell(d.m, d.ms));
+                }
+                csvContent += midRow.join(",") + "\r\n";
+
+                // 4. Process Bottom Row data elements
+                let botRow = ["bottom"];
+                for (let r = 1; r <= ROWS; r++) {
+                    const d = gridData[`${r}_${section.colIndex}`] || {};
+                    botRow.push(formatCell(d.b, d.bs));
+                }
+                csvContent += botRow.join(",") + "\r\n";
+            });
 
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `matrix_grid_log_${new Date().toISOString().slice(0,10)}.csv`);
+            link.setAttribute("download", `matrix_report_${new Date().toISOString().slice(0,10)}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         }
 
         function clearAllData() {
-            if (confirm("Wipe local grid cache? (Does not affect links you have already sent your boss)")) {
+            if (confirm("Wipe local grid cache?")) {
                 localStorage.removeItem('gridLogData'); gridData = {}; renderGrid();
             }
         }
