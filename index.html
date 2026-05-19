@@ -6,14 +6,14 @@
     <title>Seedpack Inventory Diagram</title>
     <style>
         :root {
-            --bg-color: #121212;
-            --grid-bg: #1e1e1e;
-            --cell-border: #333;
-            --accent: #00adb5;
-            --text: #eeeeee;
-            --text-muted: #888;
-            --sn-color: #aaaaaa;
-            --panel-bg: #1b1b1b;
+            --bg-color: #ffffff;
+            --grid-bg: #ffffff;
+            --cell-border: #cccccc;
+            --accent: #007a87; /* Deep high-contrast teal */
+            --text: #111111;
+            --text-muted: #555555;
+            --sn-color: #444444;
+            --panel-bg: #f8f9fa; /* Light grey card background */
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -33,49 +33,49 @@
         .row-number-label { display: flex; align-items: center; justify-content: center; font-weight: bold; color: var(--text-muted); font-size: 0.95rem; }
 
         .grid-cell {
-            background: var(--grid-bg); border: 1px solid var(--cell-border); border-radius: 6px;
+            background: var(--grid-bg); border: 2px solid var(--cell-border); border-radius: 6px;
             min-height: 105px; padding: 6px; display: flex; flex-direction: column;
-            justify-content: flex-start; cursor: pointer; transition: border-color 0.2s; -webkit-tap-highlight-color: transparent;
+            justify-content: flex-start; cursor: pointer; transition: border-color 0.15s; -webkit-tap-highlight-color: transparent;
         }
-        .grid-cell:active { border-color: var(--accent); background: #252525; }
+        .grid-cell:active { border-color: var(--accent); background: #e0f4f5; }
 
-        .line-preview { font-size: 0.7rem; white-space: normal; word-wrap: break-word; min-height: 18px; line-height: 1.2; padding: 4px 0; }
-        .line-t { color: #ff6b6b; border-bottom: 1px dashed #2a2a2a; }
-        .line-m { color: #ffd166; border-bottom: 1px dashed #2a2a2a; }
-        .line-b { color: #06d6a0; }
+        .line-preview { font-size: 0.75rem; font-weight: bold; white-space: normal; word-wrap: break-word; min-height: 18px; line-height: 1.2; padding: 4px 0; }
+        .line-t { color: #c0392b; border-bottom: 1px dashed #dddddd; } /* Deep Daylight Red */
+        .line-m { color: #d35400; border-bottom: 1px dashed #dddddd; } /* Deep Daylight Orange */
+        .line-b { color: #27ae60; } /* Deep Daylight Green */
         
         .sn-preview { color: var(--sn-color); font-size: 0.65rem; font-weight: normal; display: block; margin-top: 1px; }
         .cell-label { font-size: 0.65rem; color: var(--text-muted); align-self: flex-end; margin-top: auto; font-weight: bold; padding-top: 4px; }
 
-        /* Share & Management Panel */
+        /* Control Panel */
         .control-panel {
-            background: var(--panel-bg); border: 1px solid #2d2d2d; border-radius: 8px;
+            background: var(--panel-bg); border: 1px solid #dddddd; border-radius: 8px;
             padding: 15px; margin-top: 25px;
         }
         .panel-title { font-size: 0.85rem; font-weight: bold; color: var(--accent); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px; }
 
         /* Modals */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 10; }
-        .modal-content { background: #252525; padding: 20px; border-radius: 12px; width: 92%; max-width: 400px; border: 1px solid #444; max-height: 95vh; overflow-y: auto; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 10; }
+        .modal-content { background: #ffffff; padding: 20px; border-radius: 12px; width: 92%; max-width: 400px; border: 1px solid #bbbbbb; max-height: 95vh; overflow-y: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
         .modal-title { margin-bottom: 15px; font-size: 1rem; color: var(--accent); font-weight: bold; }
 
-        .input-group { margin-bottom: 14px; display: flex; flex-direction: column; background: #1b1b1b; padding: 10px; border-radius: 6px; border: 1px solid #2d2d2d; }
+        .input-group { margin-bottom: 14px; display: flex; flex-direction: column; background: #f8f9fa; padding: 10px; border-radius: 6px; border: 1px solid #dddddd; }
         .input-group label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; font-weight: bold; }
-        .input-group input { background: #111; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 6px; font-size: 1rem; outline: none; width: 100%; }
+        .input-group input { background: #ffffff; border: 1px solid #cccccc; color: #111111; padding: 10px; border-radius: 6px; font-size: 1rem; outline: none; width: 100%; }
         .input-group input:focus { border-color: var(--accent); }
-        .input-group input.sn-input { margin-top: 6px; background: #161616; border: 1px solid #333; font-size: 0.85rem; padding: 6px 10px; color: #b3b3b3; }
+        .input-group input.sn-input { margin-top: 6px; background: #f1f3f4; border: 1px solid #cccccc; font-size: 0.85rem; padding: 6px 10px; color: #333333; }
 
         .btn-group { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
-        button { flex: 1; min-width: 120px; padding: 12px; border: none; border-radius: 6px; font-size: 0.95rem; cursor: pointer; font-weight: bold; }
+        button { flex: 1; min-width: 120px; padding: 12px; border: none; border-radius: 6px; font-size: 0.95rem; cursor: pointer; font-weight: bold; color: #ffffff; }
         
-        .btn-save { background: var(--accent); color: #fff; }
-        .btn-cancel { background: #444; color: #fff; }
-        .btn-share { background: #1f6feb; color: #fff; }
-        .btn-excel { background: #23a964; color: #fff; }
-        .btn-print { background: #ff9f43; color: #fff; }
-        .clear-btn { background: #331c1c; color: #ff6b6b; border: 1px solid #552222; margin-top: 15px; width: 100%; font-size: 0.9rem; padding: 10px; }
+        .btn-save { background: var(--accent); }
+        .btn-cancel { background: #666666; }
+        .btn-share { background: #1f6feb; }
+        .btn-excel { background: #23a964; }
+        .btn-print { background: #e67e22; }
+        .clear-btn { background: #fff5f5; color: #cc0000; border: 1px solid #ffa0a0; margin-top: 15px; width: 100%; font-size: 0.9rem; padding: 10px; }
 
-        /* --- STYLES STRICLY FOR PRINTER / PREVIEW ENGINE --- */
+        /* --- PRINT STYLES --- */
         #print-section { display: none; }
 
         @media print {
@@ -83,7 +83,6 @@
             .matrix-wrapper, .modal, .control-panel { display: none !important; }
             #print-section { display: block !important; width: 100% !important; margin-top: 0 !important; padding-top: 0 !important; }
             
-            /* Print Document Header Bar Layout */
             .doc-header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #000 !important; padding-bottom: 4px; margin-bottom: 12px; }
             .doc-title { font-size: 14px; font-weight: bold; text-transform: uppercase; color: #000 !important; margin: 0; }
             .doc-timestamp { font-size: 9px; color: #333 !important; font-weight: normal; margin: 0; }
@@ -245,7 +244,7 @@
 
         function formatPrintText(text, sn) {
             if (!text && !sn) return "";
-            if (text && sn) return `${text}<br><span style="color:#666; font-size:8px;">[${sn}]</span>`;
+            if (text && sn) return `${text}<br><span style="color:#444; font-size:8px; font-weight:normal;">[${sn}]</span>`;
             return sn ? `[${sn}]` : text;
         }
 
@@ -326,11 +325,9 @@
                 tableRowsHtml += `</tr>`;
             });
 
-            // Capture precise localized timestamp configuration
             const now = new Date();
             const formattedDateTime = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
-            // Render Document Header section with clean typography structures
             printSection.innerHTML = `
                 <div class="doc-header">
                     <h1 class="doc-title">Seedpack Inventory Diagram</h1>
