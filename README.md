@@ -75,7 +75,8 @@
         .btn-print { background: #ff9f43; color: #fff; }
         .clear-btn { background: #331c1c; color: #ff6b6b; border: 1px solid #552222; margin-top: 15px; width: 100%; font-size: 0.9rem; padding: 10px; }
 
-        /* --- STYLES STRICLY FOR PRINTER / PREVIEW ENGINE --- */
+        /* Styles specifically targeting printer view layouts */
+         Chil container element triggers display block swapping rules */
         #print-section { display: none; }
 
         @media print {
@@ -96,10 +97,8 @@
 </head>
 <body>
 
-    <!-- Target Area Hidden from Phone Display, Becomes Visible Only to Printer Layout engine -->
     <div id="print-section"></div>
 
-    <!-- Active App Layout Layer -->
     <div class="matrix-wrapper">
         <div class="grid-headers">
             <div></div><div>Back</div><div>Mid</div><div>Front</div>
@@ -280,21 +279,14 @@
             document.body.appendChild(link); link.click(); document.body.removeChild(link);
         }
 
-        // --- FIXED: In-Page Single Document Print Generator Engine ---
         function printMatrix() {
             const printSection = document.getElementById('print-section');
-            const layoutMap = [
-                { title: "Back Row", colIndex: 1 },
-                { title: "Middle Row", colIndex: 2 },
-                { title: "Front Row", colIndex: 3 }
-            ];
-
+            const layoutMap = [{ title: "Back Row", colIndex: 1 }, { title: "Middle Row", colIndex: 2 }, { title: "Front Row", colIndex: 3 }];
             let tableRowsHtml = "";
 
             layoutMap.forEach(section => {
                 tableRowsHtml += `<tr class="section-hdr"><td colspan="11">${section.title}</td></tr>`;
                 
-                // top line
                 tableRowsHtml += `<tr><td class="pos-lbl">top</td>`;
                 for (let r = 1; r <= ROWS; r++) {
                     const d = gridData[`${r}_${section.colIndex}`] || {};
@@ -302,7 +294,6 @@
                 }
                 tableRowsHtml += `</tr>`;
 
-                // mid line
                 tableRowsHtml += `<tr><td class="pos-lbl">mid</td>`;
                 for (let r = 1; r <= ROWS; r++) {
                     const d = gridData[`${r}_${section.colIndex}`] || {};
@@ -310,7 +301,6 @@
                 }
                 tableRowsHtml += `</tr>`;
 
-                // bottom line
                 tableRowsHtml += `<tr><td class="pos-lbl">bottom</td>`;
                 for (let r = 1; r <= ROWS; r++) {
                     const d = gridData[`${r}_${section.colIndex}`] || {};
@@ -319,26 +309,17 @@
                 tableRowsHtml += `</tr>`;
             });
 
-            // Re-write contents cleanly into the structural hidden container layer
             printSection.innerHTML = `
                 <h2>Matrix Log Verification Sheet — ${new Date().toLocaleDateString()}</h2>
                 <table>
                     <thead>
-                        <tr>
-                            <th style="width: 55px;">Position</th>
-                            <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th>
-                        </tr>
+                        <tr><th style="width: 55px;">Position</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th></tr>
                     </thead>
-                    <tbody>
-                        ${tableRowsHtml}
-                    </tbody>
+                    <tbody>${tableRowsHtml}</tbody>
                 </table>
             `;
             
-            // Give system DOM thread a 50ms pause to guarantee table rendering finishes before popping layout menu
-            setTimeout(() => {
-                window.print();
-            }, 50);
+            setTimeout(() => { window.print(); }, 50);
         }
 
         function clearAllData() {
